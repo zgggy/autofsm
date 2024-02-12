@@ -20,7 +20,6 @@ using StateList  = std::vector<int>;
 using TransTable = std::vector<std::vector<int>>;
 enum FSM_GET_NONE { NO_TRANS = -1, NO_STATE = -2 };
 
-
 /* 前置声明，因为下列类之间有互相依赖 */
 template <class T>
 class State;
@@ -30,7 +29,6 @@ template <class T>
 class Condition;
 template <class T>
 class Machine;
-
 
 /***********
  ** State **
@@ -65,19 +63,13 @@ class State {
     /** 构造函数
      * 初始化: name_
      * 待初始化: machine_, functions, state_could_switch_ */
-    State(int name, bool could_exit = true) : name_(name), could_exit_(could_exit) {
-        has_submachine_ = false;
-    }
+    State(int name, bool could_exit = true) : name_(name), could_exit_(could_exit) { has_submachine_ = false; }
 
     /* 获取当前状态的名称 */
-    auto name() -> int {
-        return name_;
-    }
+    auto name() -> int { return name_; }
 
     /* 判断状态是否存在，只要名为NO_STATE(-2)就认为该状态为不存在（即使该实例是存在的） */
-    auto exist() -> bool {
-        return name_ != FSM_GET_NONE::NO_STATE;
-    }
+    auto exist() -> bool { return name_ != FSM_GET_NONE::NO_STATE; }
 
     /* 执行所有状态进入函数 */
     auto on_enter() -> void {
@@ -107,16 +99,12 @@ class State {
     auto try_switch() -> void {
         for (const auto& state_name : subsequent_states_) {
             auto switch_success = machine_->to_state(state_name);
-            if (switch_success) {
-                return;
-            }
+            if (switch_success) return;
         }
     }
 
     /* 获取当前状态机 */
-    auto get_machine() -> Machine<T>* {
-        return machine_;
-    }
+    auto get_machine() -> Machine<T>* { return machine_; }
 
     /* 状态关联状态机与模型实例（调用状态机的类实例）注册 */
     auto machine_regist(Machine<T>* machine, T* obj) -> void {
@@ -131,47 +119,33 @@ class State {
     }
 
     /* 获取是否有子状态 */
-    auto has_submachine() -> bool {
-        return has_submachine_;
-    }
+    auto has_submachine() -> bool { return has_submachine_; }
 
     /* 获取下层子状态机 */
-    auto get_submachine() -> Machine<T>* {
-        return submachine_;
-    }
+    auto get_submachine() -> Machine<T>* { return submachine_; }
 
     /* 返回上层状态是否可从当前状态退出 */
-    auto could_exit() -> bool {
-        return could_exit_;
-    }
+    auto could_exit() -> bool { return could_exit_; }
 
     /* 设置上层状态是否可以从当前状态退出 */
-    auto set_could_exit(bool could) -> void {
-        could_exit_ = could;
-    }
+    auto set_could_exit(bool could) -> void { could_exit_ = could; }
 
     /** 状态关联函数注册
      * type: "on_enter", "on_exit", "in_state"
      */
     auto function_regist(void (T::*func)(void), std::string type) -> void {
-        if (type == "on_enter") {
+        if (type == "on_enter")
             enter_functions_.emplace_back(func);
-        }
-        else if (type == "on_exit") {
+        else if (type == "on_exit")
             exit_functions_.emplace_back(func);
-        }
-        else if (type == "in_state") {
+        else if (type == "in_state")
             continous_functions_.emplace_back(func);
-        }
-        else {
+        else
             std::cout << "type must be one of \"on_enter\", \"on_exit\",\"in_state\"." << std::endl;
-        }
     }
 
     /* 可转移的后续状态注册 */
-    auto transition_regist(int to_state_name) -> void {
-        subsequent_states_.emplace_back(to_state_name);
-    }
+    auto transition_regist(int to_state_name) -> void { subsequent_states_.emplace_back(to_state_name); }
 };
 
 /****************
@@ -200,29 +174,19 @@ class Transition {
     Transition(int name, int from_name, int to_name) : name_(name), from_name_(from_name), to_name_(to_name){};
 
     /* 获取转移名称 */
-    auto name() -> int {
-        return name_;
-    }
+    auto name() -> int { return name_; }
 
     /* 判断转移是否存在，只要名为NO_TRANS(-1)就认为该转移为不存在（即使该实例是存在的） */
-    auto exist() -> bool {
-        return name_ != FSM_GET_NONE::NO_TRANS;
-    }
+    auto exist() -> bool { return name_ != FSM_GET_NONE::NO_TRANS; }
 
     /* 获取转移源状态 */
-    auto from() -> State<T>& {
-        return machine_->get_state(from_name_);
-    }
+    auto from() -> State<T>& { return machine_->get_state(from_name_); }
 
     /* 获取转移目标状态 */
-    auto to() -> State<T>& {
-        return machine_->get_state(to_name_);
-    }
+    auto to() -> State<T>& { return machine_->get_state(to_name_); }
 
     /* 判断转移是否就绪 */
-    auto is_ready() -> bool {
-        return condition_.eval();
-    }
+    auto is_ready() -> bool { return condition_.eval(); }
 
     /* 执行所有转移准备函数，即发起转移后 and 判断转移就绪前要执行的函数 */
     auto prepare() -> void {
@@ -259,21 +223,16 @@ class Transition {
     /** 转移关联函数注册
      * type: "prepare", "before", "after" */
     auto function_regist(void (T::*func)(void), std::string type) -> void {
-        if (type == "prepare") {
+        if (type == "prepare")
             prepare_functions_.emplace_back(func);
-        }
-        else if (type == "before") {
+        else if (type == "before")
             before_functions_.emplace_back(func);
-        }
-        else if (type == "after") {
+        else if (type == "after")
             after_functions_.emplace_back(func);
-        }
     }
 
     /* 转移条件注册 */
-    auto condition_regist(bool (T::*func)(void)) -> void {
-        condition_.add_condition(func);
-    }
+    auto condition_regist(bool (T::*func)(void)) -> void { condition_.add_condition(func); }
 };
 
 /***************
@@ -290,22 +249,16 @@ class Condition {
     Condition() = default;
 
     /* 注册模型实例 */
-    auto object_regist(T* obj) {
-        obj_ = obj;
-    }
+    auto object_regist(T* obj) { obj_ = obj; }
 
     /* 添加判断条件，参数必须为输出bool的无参函数 */
-    auto add_condition(bool (T::*func)(void)) -> void {
-        conditions_.emplace_back(func);
-    }
+    auto add_condition(bool (T::*func)(void)) -> void { conditions_.emplace_back(func); }
 
     /* 计算所有判断条件，返回是否通过 */
     auto eval() -> bool {
         for (const auto f : conditions_) {
             auto func = std::bind(f, obj_);
-            if (!func()) {
-                return false;
-            }
+            if (! func()) return false;
         }
         return true;
     }
@@ -332,34 +285,24 @@ class Machine {
     /** 构造函数
      * 初始化: states_, transitions_, name_, current_state_
      * 帮助初始化: states_.machine, transitions_.machine, states_.to */
-    Machine(std::vector<int> state_names, std::vector<std::vector<int>> transitions, int curstate_name, T* obj)
-            : obj_(obj) {
+    Machine(std::vector<int> state_names, std::vector<std::vector<int>> transitions, int curstate_name, T* obj) : obj_(obj) {
         /* 初始化states_与transitions_ */
         states_.clear();
         transitions_.clear();
-        for (const auto& state_name : state_names) {
-            states_.emplace(state_name, State<T>(state_name));
-        }
-        for (const auto& trans : transitions) {
-            transitions_.emplace(trans[0], Transition<T>(trans[0], trans[1], trans[2]));
-        }
+        for (const auto& state_name : state_names) states_.emplace(state_name, State<T>(state_name));
+        for (const auto& trans : transitions) transitions_.emplace(trans[0], Transition<T>(trans[0], trans[1], trans[2]));
 
         /* 添加“不存在”的state与transition */
         states_.emplace(FSM_GET_NONE::NO_STATE, State<T>(FSM_GET_NONE::NO_STATE));
-        transitions_.emplace(FSM_GET_NONE::NO_TRANS,
-                             Transition<T>(FSM_GET_NONE::NO_TRANS, FSM_GET_NONE::NO_STATE, FSM_GET_NONE::NO_STATE));
+        transitions_.emplace(FSM_GET_NONE::NO_TRANS, Transition<T>(FSM_GET_NONE::NO_TRANS, FSM_GET_NONE::NO_STATE, FSM_GET_NONE::NO_STATE));
 
         /* 初始化current_state_ */
         default_state_name_ = curstate_name;
         current_state_      = &get_state(default_state_name_);
 
         /* 将自身(machine)关联到states_与transitions_ */
-        for (auto iter = states_.begin(); iter != states_.end(); iter++) {
-            iter->second.machine_regist(this, obj_);
-        }
-        for (auto iter = transitions_.begin(); iter != transitions_.end(); iter++) {
-            iter->second.machine_regist_and_state_init(this, obj_);
-        }
+        for (auto iter = states_.begin(); iter != states_.end(); iter++) iter->second.machine_regist(this, obj_);
+        for (auto iter = transitions_.begin(); iter != transitions_.end(); iter++) iter->second.machine_regist_and_state_init(this, obj_);
         // /* 将自身(machine)关联到states_与transitions_ */
         // for (auto& state : states_) {
         //     state.machine_regist(this, obj_);
@@ -370,14 +313,10 @@ class Machine {
     }
 
     /* 获取状态机当前状态 */
-    auto get_curstate() -> State<T>& {
-        return *current_state_;
-    }
+    auto get_curstate() -> State<T>& { return *current_state_; }
 
     /* 获取此子状态机退出时的状态 */
-    auto get_hisstate() -> State<T>& {
-        return *history_state_;
-    }
+    auto get_hisstate() -> State<T>& { return *history_state_; }
 
     /* 给出当前子状态机是否可以从当前状态退出，向子状态机递归判断 */
     auto could_exit() -> bool {
@@ -392,9 +331,7 @@ class Machine {
      * Done: 仅在可以退出的状态退出当前状态机，递归退出子状态机
      */
     auto exit() -> void {
-        if (current_state_->has_submachine()) {
-            current_state_->get_submachine()->exit();
-        }
+        if (current_state_->has_submachine()) current_state_->get_submachine()->exit();
         history_state_ = current_state_;
     }
 
@@ -405,15 +342,11 @@ class Machine {
     }
 
     /* 状态机进入，重置当前状态为退出前状态，一般无需重置 */
-    auto enter() -> void {
-        current_state_ = history_state_;
-    }
+    auto enter() -> void { current_state_ = history_state_; }
 
     /* 获取名为state_name的状态，若不存在则返回一个name=-2的State实例 */
     auto get_state(int state_name) -> State<T>& {
-        if (states_.count(state_name) == 1) {
-            return states_[state_name];
-        }
+        if (states_.count(state_name) == 1) { return states_[state_name]; }
         else {
             std::cout << "state " << state_name << " Not exists!" << std::endl;
             return states_[FSM_GET_NONE::NO_STATE];
@@ -421,9 +354,7 @@ class Machine {
     }
 
     /* 判断当前状态是否（名）为state_name */
-    auto is_state(int state_name) -> bool {
-        return current_state_->name() == state_name;
-    }
+    auto is_state(int state_name) -> bool { return current_state_->name() == state_name; }
 
     /** 状态转移
      * 依次执行:
@@ -435,9 +366,8 @@ class Machine {
             trans.prepare();
             if (trans.is_ready()) {
                 trans.before();
-                if (current_state_->has_submachine() and current_state_->get_submachine()->could_exit()) {
+                if (current_state_->has_submachine() and current_state_->get_submachine()->could_exit())
                     current_state_->get_submachine()->exit();
-                }
                 current_state_->on_exit();
                 current_state_ = &get_state(to_state_name);
                 current_state_->on_enter();
@@ -451,14 +381,12 @@ class Machine {
 
     /* 添加状态 */
     auto add_state(int new_state_name) -> bool {
-        if (!get_state(new_state_name).exist()) {
+        if (! get_state(new_state_name).exist()) {
             states_.emplace(new_state_name, State<T>(new_state_name));
             get_state(new_state_name).machine_regist(this, obj_);
             return true;
         }
-        else {
-            return false;
-        }
+        else { return false; }
     }
 
     /* 注册状态函数，将名为state_name的状态通过type与func关联 */
@@ -467,15 +395,11 @@ class Machine {
     }
 
     /* 获取上一次转移 */
-    auto get_last_transition() -> Transition<T>& {
-        return last_transition_;
-    }
+    auto get_last_transition() -> Transition<T>& { return last_transition_; }
 
     /* 获取名为trans_name的转移，若不存在则返回一个name=-1的Transition实例 */
     auto get_transition(int trans_name) -> Transition<T>& {
-        if (transitions_.count(trans_name) == 1) {
-            return transitions_[trans_name];
-        }
+        if (transitions_.count(trans_name) == 1) { return transitions_[trans_name]; }
         else {
             std::cout << "trans " << trans_name << " Not exists!" << std::endl;
             return transitions_[FSM_GET_NONE::NO_TRANS];
@@ -484,11 +408,8 @@ class Machine {
 
     /* 获取源名为from_name、目标名为to_name的转移，不存在则返回一个name=-1的Transition实例 */
     auto get_transition(int from_name, int to_name) -> Transition<T>& {
-        for (auto iter = transitions_.begin(); iter != transitions_.end(); iter++) {
-            if (iter->second.from().name() == from_name and iter->second.to().name() == to_name) {
-                return iter->second;
-            }
-        }
+        for (auto iter = transitions_.begin(); iter != transitions_.end(); iter++)
+            if (iter->second.from().name() == from_name and iter->second.to().name() == to_name) return iter->second;
         std::cout << "trans " << from_name << " TO " << to_name << " Not exists!" << std::endl;
         return transitions_[FSM_GET_NONE::NO_TRANS];
     }
@@ -498,14 +419,12 @@ class Machine {
         auto got_trans      = get_transition(new_trans_name);
         auto got_from_state = get_state(from_name);
         auto got_to_state   = get_state(to_name);
-        if (!got_trans.exist() and got_from_state.exist() and got_to_state.exist()) {
+        if (! got_trans.exist() and got_from_state.exist() and got_to_state.exist()) {
             transitions_.emplace(new_trans_name, Transition<T>(new_trans_name, got_from_state, got_to_state));
             get_transition(new_trans_name).machine_regist_and_state_init(this, obj_);
             return true;
         }
-        else {
-            return false;
-        }
+        else { return false; }
     }
 
     /* 转移函数注册，type: "prepare", "before", "after" */
@@ -519,9 +438,7 @@ class Machine {
     }
 
     /* 通过转移名进行转移条件注册 */
-    auto transition_condition_regist(int trans_name, bool (T::*func)(void)) -> void {
-        get_transition(trans_name).condition_regist(func);
-    }
+    auto transition_condition_regist(int trans_name, bool (T::*func)(void)) -> void { get_transition(trans_name).condition_regist(func); }
 
     /* 通过源状态与目标状态进行转移条件注册 */
     auto transition_condition_regist(int from_name, int to_name, bool (T::*func)(void)) -> void {
@@ -532,9 +449,7 @@ class Machine {
     auto on_going() -> void {
         current_state_->try_switch();
         current_state_->in_state();
-        if (current_state_->has_submachine()) {
-            current_state_->get_submachine()->on_going();
-        }
+        if (current_state_->has_submachine()) current_state_->get_submachine()->on_going();
     }
 };
 
