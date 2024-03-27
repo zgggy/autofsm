@@ -9,6 +9,7 @@
 #ifndef __WICRI_FINITE_STATE_MACHINE__
 #define __WICRI_FINITE_STATE_MACHINE__
 
+#include <any>
 #include <functional> // 实现通过bind()对模型类的函数成员转换
 #include <iostream>
 #include <map>
@@ -268,6 +269,43 @@ class Condition {
  ** Machine **
  *************/
 
+class AnyData {
+  public:
+    std::any         data_;
+    std::any         default_;
+    std::vector<int> binding_states_;
+
+  public:
+    AnyData(const std::any& data, const std::any& default_data) : data_(data), default_(default_data) {}
+    AnyData(const std::any& data, const std::any& default_data, std::vector<int> binding_states)
+            : data_(data), default_(default_data), binding_states_(binding_states) {}
+
+    void Reset() { data_ = default_; }
+
+    void Set(const std::any& data) { data_ = data; }
+    void SetDefault(const std::any& data) { default_ = data; }
+
+    template <typename _AnyType>
+    auto Get() -> _AnyType {
+        try {
+            return std::any_cast<_AnyType>(data_);
+        } catch (const std::bad_any_cast&) {
+            std::cout << "Bad Any Cast!" << std::endl;
+            return _AnyType{};
+        }
+    }
+
+    template <typename _AnyType>
+    auto GetDefault() -> _AnyType {
+        try {
+            return std::any_cast<_AnyType>(default_);
+        } catch (const std::bad_any_cast&) {
+            std::cout << "Bad Any Cast!" << std::endl;
+            return _AnyType{};
+        }
+    }
+};
+
 template <class T>
 class Machine {
   private:
@@ -278,6 +316,8 @@ class Machine {
     Transition<T>*               last_transition_; // 上一次转移
     std::map<int, State<T>>      states_;          // 所有状态
     std::map<int, Transition<T>> transitions_;     // 所有转移
+  public:
+    std::unordered_map<std::string, AnyData> variables_;
 
   public:
     Machine() = default;
@@ -370,6 +410,9 @@ class Machine {
                     current_state_->get_submachine()->exit();
                 current_state_->on_exit();
                 current_state_ = &get_state(to_state_name);
+                for (auto& [_, any_data] : variables_)
+                    if (std::count(any_data.binding_states_.begin(), any_data.binding_states_.end(), current_state_->name()) == 0)
+                        any_data.Reset();
                 current_state_->on_enter();
                 trans.after();
                 last_transition_ = &trans;
@@ -450,6 +493,14 @@ class Machine {
         current_state_->try_switch();
         current_state_->in_state();
         if (current_state_->has_submachine()) current_state_->get_submachine()->on_going();
+    }
+
+    auto add_variable(std::string var_name, std::any data, std::any default_data) {
+        variables_.insert_or_assign(var_name, AnyData(data, default_data));
+    }
+
+    auto regist_variable_with_state(std::string var_name, std::vector<int> binding_states) {
+        variables_.at(var_name).binding_states_ = binding_states;
     }
 };
 
