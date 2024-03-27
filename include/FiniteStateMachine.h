@@ -343,13 +343,6 @@ class Machine {
         /* 将自身(machine)关联到states_与transitions_ */
         for (auto iter = states_.begin(); iter != states_.end(); iter++) iter->second.machine_regist(this, obj_);
         for (auto iter = transitions_.begin(); iter != transitions_.end(); iter++) iter->second.machine_regist_and_state_init(this, obj_);
-        // /* 将自身(machine)关联到states_与transitions_ */
-        // for (auto& state : states_) {
-        //     state.machine_regist(this, obj_);
-        // }
-        // for (auto& trans : transitions_) {
-        //     trans.machine_regist_and_state_init(this, obj_);
-        // }
     }
 
     /* 获取状态机当前状态 */
@@ -379,6 +372,7 @@ class Machine {
     auto reset() -> void {
         history_state_ = &get_state(default_state_name_);
         current_state_ = &get_state(default_state_name_);
+        for (auto& [_, data] : variables_) data.Reset();
     }
 
     /* 状态机进入，重置当前状态为退出前状态，一般无需重置 */
@@ -495,12 +489,19 @@ class Machine {
         if (current_state_->has_submachine()) current_state_->get_submachine()->on_going();
     }
 
-    auto add_variable(std::string var_name, std::any data, std::any default_data) {
+    auto add_variable(std::string var_name, std::any data, std::any default_data, std::vector<int> binding_states) {
         variables_.insert_or_assign(var_name, AnyData(data, default_data));
+        variables_.at(var_name).binding_states_ = binding_states;
     }
 
-    auto regist_variable_with_state(std::string var_name, std::vector<int> binding_states) {
-        variables_.at(var_name).binding_states_ = binding_states;
+    template <typename _DataType>
+    auto get_var(std::string var_name) {
+        return variables_.at(var_name).Get<_DataType>();
+    }
+
+    template <typename _DataType>
+    void set_var(std::string var_name, _DataType data) {
+        variables_.at(var_name).Set(data);
     }
 };
 
