@@ -1,13 +1,13 @@
 /**
  * Created Time: 2022.09.06
- * File name:    FiniteStateMachine.h
- * Author:       zgy(zhangguangyan@wicri.org)
+ * File name:    AutoFiniteStateMachine.h
+ * Author:       zgy(zgggy@foxmail.com)
  * Brief:        有限状态机框架
  * Include:      Class: State, Transition, Condition, Machine
  */
 
-#ifndef __WICRI_FINITE_STATE_MACHINE__
-#define __WICRI_FINITE_STATE_MACHINE__
+#ifndef __WICRI_AUTO_FINITE_STATE_MACHINE__
+#define __WICRI_AUTO_FINITE_STATE_MACHINE__
 
 #include <any>
 #include <functional> // 实现通过bind()对模型类的函数成员转换
@@ -505,4 +505,4 @@ class Machine {
     }
 };
 
-#endif //__WICRI_FINITE_STATE_MACHINE__
+#endif //__WICRI_AUTO_FINITE_STATE_MACHINE__

@@ -1,5 +1,9 @@
 # auto_finite_state_machine
 
+## Usage
+
+add `AutoFiniteStateMachine.h` to your project, and `#include` it.
+
 自动状态机，通过将函数与条件等注册至状态和转移的方式进行搭建，框架会进行转移判断、转移函数、状态出入函数和状态保持函数的全自动执行。
 
 ## 程序设计框架建议
