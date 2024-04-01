@@ -6,8 +6,8 @@
  * Include:      Class: State, Transition, Condition, Machine
  */
 
-#ifndef __WICRI_AUTO_FINITE_STATE_MACHINE__
-#define __WICRI_AUTO_FINITE_STATE_MACHINE__
+#ifndef __AUTO_FINITE_STATE_MACHINE__
+#define __AUTO_FINITE_STATE_MACHINE__
 
 #include <any>
 #include <functional> // 实现通过bind()对模型类的函数成员转换
@@ -505,4 +505,4 @@ class Machine {
     }
 };
 
-#endif //__WICRI_AUTO_FINITE_STATE_MACHINE__
+#endif //__AUTO_FINITE_STATE_MACHINE__
