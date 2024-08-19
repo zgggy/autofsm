@@ -111,7 +111,7 @@ class State {
     bool try_exit() {
         if (busy()) return false;
         if (current_child_name_ == -1) return false;
-        if (not childs_.at(current_child_name_).try_exit()) return false;
+        if (not childs_.at(current_child_name_)->try_exit()) return false;
         on_exit();
         return true;
     }
