@@ -13,7 +13,7 @@
 
 #include <iomanip>
 
-#include "FiniteStateMachine.h"
+#include "auto_finite_state_machine.h"
 
 /* 全部状态与转移声明，枚举时可以将它们放在一个enum里面，也可以分开 */
 enum CatStates {

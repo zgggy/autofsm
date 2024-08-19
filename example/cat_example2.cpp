@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "../include/FiniteStateMachine.h"
+#include "../include/auto_finite_state_machine.h"
 
 #define MAKE_ENUM(name, ...)                              \
     enum name { __VA_ARGS__, name##__COUNT };             \

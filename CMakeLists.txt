@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.28)
 project(FiniteStateMachine)
 
-set(CMAKE_CXX_COMPILER "c++")
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+# set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SRC_LIST example/cat_example2.cpp)
+add_compile_options(-std=c++17 -fconcepts)
+
+set(SRC_LIST example/cat.cc)
 
 add_executable(cat ${SRC_LIST})

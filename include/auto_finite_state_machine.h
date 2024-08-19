@@ -36,13 +36,21 @@ class Machine;
  ***********/
 
 /** TODO by zgy
- * 1.应当存在state不可在上层状态机退出时正在运行：
- *      目前是令其主状态机在此状态运行时不可退出，见“bool could_exit_”，应该是完备的功能，待测试。
- * 2.应当存在state在上层状态机退出时选择暂停还是停止。
- *      若暂停，上层状态机重新运行时此状态继续运行；若停止，上层状态机重新运行时执行默认状态。
+ * 1. 应当存在state不可在上层状态机退出时正在运行：
+ *    目前是令其主状态机在此状态运行时不可退出，见“bool could_exit_”，应该是完备的功能，待测试。
+ *    已实现could_exit_，作为除condition之外的另一个命令。
+ * 2. 应当存在state在上层状态机退出时选择暂停还是停止。
+ *    若暂停，上层状态机重新运行时此状态继续运行；若停止，上层状态机重新运行时执行默认状态。
+ *    已实现主动reset功能，若用户不主动调用reset，则为暂停模式，否则为停止。
+ * 3. 问题：state enter函数不能覆盖所有“进入”场景。
+ * 4. 问题：submachine名字太迷惑了，state绑定的submachine其实是它这一层的machine。
+ * 5. 优化：state和machine应当整合。
+ * 6. 优化：取消template T，改用继承方式实现state。
  */
 template <class T>
 class State {
+    enum class Preset { AlwaysOut = -1, AlwaysIn = -2, NoState = -3 };
+
   private:
     /* 单层状态相关 */
     T*                             obj_;                 // 绑定的模型实例
@@ -70,7 +78,7 @@ class State {
     auto name() -> int { return name_; }
 
     /* 判断状态是否存在，只要名为NO_STATE(-2)就认为该状态为不存在（即使该实例是存在的） */
-    auto exist() -> bool { return name_ != FSM_GET_NONE::NO_STATE; }
+    auto exist() -> bool { return name_ != State::Preset::NoState; }
 
     /* 执行所有状态进入函数 */
     auto on_enter() -> void {
@@ -155,6 +163,8 @@ class State {
 
 template <class T>
 class Transition {
+    enum class Preset { AlwaysTrue = -1, AlwaysFalse = -2, NoTrans = -3 };
+
   private:
     T*                             obj_;               // 绑定的模型实例
     int                            name_;              // 转移名
@@ -172,13 +182,13 @@ class Transition {
     /** 构造函数
      * 初始化: name_, from_name_, to_name_
      * 待初始化: from_, to_, machine_, conditions_, functions_ */
-    Transition(int name, int from_name, int to_name) : name_(name), from_name_(from_name), to_name_(to_name){};
+    Transition(int name, int from_name, int to_name) : name_(name), from_name_(from_name), to_name_(to_name) {};
 
     /* 获取转移名称 */
     auto name() -> int { return name_; }
 
     /* 判断转移是否存在，只要名为NO_TRANS(-1)就认为该转移为不存在（即使该实例是存在的） */
-    auto exist() -> bool { return name_ != FSM_GET_NONE::NO_TRANS; }
+    auto exist() -> bool { return name_ != Transition::Preset::NoTrans; }
 
     /* 获取转移源状态 */
     auto from() -> State<T>& { return machine_->get_state(from_name_); }
@@ -325,19 +335,24 @@ class Machine {
     /** 构造函数
      * 初始化: states_, transitions_, name_, current_state_
      * 帮助初始化: states_.machine, transitions_.machine, states_.to */
-    Machine(std::vector<int> state_names, std::vector<std::vector<int>> transitions, int curstate_name, T* obj) : obj_(obj) {
+    Machine(std::vector<int> state_names, std::vector<std::vector<int>> transitions, int default_state_name, T* obj) : obj_(obj) {
         /* 初始化states_与transitions_ */
         states_.clear();
         transitions_.clear();
+        states_.emplace(State::Preset::AlwaysOut, State<T>(State::Preset::AlwaysOut));
         for (const auto& state_name : state_names) states_.emplace(state_name, State<T>(state_name));
+        transitions_.emplace(Transition::Preset::AlwaysTrue,
+                             Transition<T>(Transition::Preset::AlwaysTrue, State::Preset::AlwaysOut, default_state_name));
+        transitions_.at(Transition::Preset::AlwaysTrue).condition_regist([] { return true; });
         for (const auto& trans : transitions) transitions_.emplace(trans[0], Transition<T>(trans[0], trans[1], trans[2]));
 
         /* 添加“不存在”的state与transition */
-        states_.emplace(FSM_GET_NONE::NO_STATE, State<T>(FSM_GET_NONE::NO_STATE));
-        transitions_.emplace(FSM_GET_NONE::NO_TRANS, Transition<T>(FSM_GET_NONE::NO_TRANS, FSM_GET_NONE::NO_STATE, FSM_GET_NONE::NO_STATE));
+        states_.emplace(State::Preset::NoState, State<T>(State::Preset::NoState));
+        transitions_.emplace(Transition::Preset::NoTrans,
+                             Transition<T>(Transition::Preset::NoTrans, State::Preset::NoState, State::Preset::NoState));
 
         /* 初始化current_state_ */
-        default_state_name_ = curstate_name;
+        default_state_name_ = default_state_name;
         current_state_      = &get_state(default_state_name_);
 
         /* 将自身(machine)关联到states_与transitions_ */
@@ -383,7 +398,7 @@ class Machine {
         if (states_.count(state_name) == 1) { return states_[state_name]; }
         else {
             std::cout << "state " << state_name << " Not exists!" << std::endl;
-            return states_[FSM_GET_NONE::NO_STATE];
+            return states_[State::Preset::NoState];
         }
     }
 
@@ -394,6 +409,32 @@ class Machine {
      * 依次执行:
      * 准备函数->判断->转移前函数->子状态机退出->状态退出函数->状态切换->状态进入函数->转移后函数->记录本次转移 */
     auto to_state(int to_state_name) -> bool {
+        auto trans = get_transition(current_state_->name(), to_state_name);
+        if ((not current_state_->has_submachine()) or
+            (current_state_->has_submachine() and current_state_->get_submachine()->could_exit())) {
+            trans.prepare();
+            if (trans.is_ready()) {
+                trans.before();
+                if (current_state_->has_submachine() and current_state_->get_submachine()->could_exit())
+                    current_state_->get_submachine()->exit();
+                current_state_->on_exit();
+                current_state_ = &get_state(to_state_name);
+                for (auto& [_, any_data] : variables_)
+                    if (std::count(any_data.binding_states_.begin(), any_data.binding_states_.end(), current_state_->name()) == 0)
+                        any_data.Reset();
+                current_state_->on_enter();
+                trans.after();
+                last_transition_ = &trans;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 状态转移
+     * 依次执行:
+     * 准备函数->判断->转移前函数->子状态机退出->状态退出函数->状态切换->状态进入函数->转移后函数->记录本次转移 */
+    auto to_state2(int to_state_name) -> bool {
         auto trans = get_transition(current_state_->name(), to_state_name);
         if ((not current_state_->has_submachine()) or
             (current_state_->has_submachine() and current_state_->get_submachine()->could_exit())) {
@@ -439,7 +480,7 @@ class Machine {
         if (transitions_.count(trans_name) == 1) { return transitions_[trans_name]; }
         else {
             std::cout << "trans " << trans_name << " Not exists!" << std::endl;
-            return transitions_[FSM_GET_NONE::NO_TRANS];
+            return transitions_[Transition::Preset::NoTrans];
         }
     }
 
@@ -448,7 +489,7 @@ class Machine {
         for (auto iter = transitions_.begin(); iter != transitions_.end(); iter++)
             if (iter->second.from().name() == from_name and iter->second.to().name() == to_name) return iter->second;
         std::cout << "trans " << from_name << " TO " << to_name << " Not exists!" << std::endl;
-        return transitions_[FSM_GET_NONE::NO_TRANS];
+        return transitions_[Transition::Preset::NoTrans];
     }
 
     /* 添加转移 */
