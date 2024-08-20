@@ -1,5 +1,7 @@
 # auto_finite_state_machine
 
+under progress...
+
 ## Usage
 
 1. add `autofsm.h` to your project, then just `#include` it.

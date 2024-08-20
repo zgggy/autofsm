@@ -43,16 +43,13 @@ MAKE_ENUM(States,         //
 )
 
 class Cat {
-    using ST = fsm::State<Cat>;
-    using TR = fsm::Transition<Cat>;
-
   public:
     int satiety{0};
     int excitement{0};
     int find{0};
 
   public:
-    ST machine_;
+    fsm::State<Cat> machine_;
     Cat() : machine_(top, this) {
         machine_.add_child(play, &Cat::play_process);
         machine_.child(play)->add_child(play_find, &Cat::find_process, true);
@@ -62,15 +59,15 @@ class Cat {
         machine_.child(silent)->add_child(silent_calm, &Cat::calm_process, true);
         machine_.child(silent)->add_child(silent_sleep, &Cat::sleep_process);
 
-        machine_.child(play)->trans_reg(eat, &Cat::play_eat);
-        machine_.child(play)->trans_reg(silent, &Cat::play_silent);
-        machine_.child(play)->child(play_find)->trans_reg(play_with_ball, &Cat::find_ball);
-        machine_.child(play)->child(play_with_ball)->trans_reg(play_find, &Cat::loss_ball);
-        machine_.child(eat)->trans_reg(silent, &Cat::eat_silent);
-        machine_.child(silent)->trans_reg(play, &Cat::silent_play);
-        machine_.child(silent)->trans_reg(eat, &Cat::silent_eat);
-        machine_.child(silent)->child(silent_calm)->trans_reg(silent_sleep, &Cat::calm_sleep);
-        machine_.child(silent)->child(silent_sleep)->trans_reg(silent_calm, &Cat::sleep_calm);
+        machine_.child(play)->reg_transition(eat, &Cat::play_eat);
+        machine_.child(play)->reg_transition(silent, &Cat::play_silent);
+        machine_.child(play)->child(play_find)->reg_transition(play_with_ball, &Cat::find_ball);
+        machine_.child(play)->child(play_with_ball)->reg_transition(play_find, &Cat::loss_ball);
+        machine_.child(eat)->reg_transition(silent, &Cat::eat_silent);
+        machine_.child(silent)->reg_transition(play, &Cat::silent_play);
+        machine_.child(silent)->reg_transition(eat, &Cat::silent_eat);
+        machine_.child(silent)->child(silent_calm)->reg_transition(silent_sleep, &Cat::calm_sleep);
+        machine_.child(silent)->child(silent_sleep)->reg_transition(silent_calm, &Cat::sleep_calm);
     }
 
     void play_process() {

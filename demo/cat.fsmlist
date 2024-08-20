@@ -1,0 +1,6 @@
+cat = *silent, play, eat
+    silent = *calm, sleep
+    play = with_ball, *find_ball
+errorlinetest*
+ball = *charge, hide, caught
+errorstate = a, b, c
