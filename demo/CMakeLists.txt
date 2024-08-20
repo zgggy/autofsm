@@ -6,6 +6,6 @@ project(FiniteStateMachine)
 
 add_compile_options(-std=c++17 -fconcepts)
 
-set(SRC_LIST example/cat.cc)
+set(SRC_LIST cat.cc)
 
 add_executable(cat ${SRC_LIST})
